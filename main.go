@@ -15,6 +15,55 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const sqlTaggedGames = `SELECT UserReleaseTags.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseTags
+LEFT JOIN WebCacheResources ON UserReleaseTags.releaseKey = WebCacheResources.releaseKey
+LEFT JOIN GamePieces ON UserReleaseTags.releaseKey = GamePieces.releaseKey
+WHERE UserReleaseTags.tag = 'StartMenuTiles' AND WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`
+
+// Uses a partial Start Layout (https://docs.microsoft.com/en-us/windows/configuration/customize-and-export-start-layout#configure-a-partial-start-layout)
+const partialStartLayoutBegin = `<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
+  <LayoutOptions StartTileGroupCellWidth="8" />
+  <DefaultLayoutOverride LayoutCustomizationRestrictionType="OnlySpecifiedGroups">
+    <StartLayoutCollection>
+	  <defaultlayout:StartLayout GroupCellWidth="8">
+		<start:Group Name="">`
+
+const startLayoutTile = `
+          <start:DesktopApplicationTile Size="2x2" Column="%d" Row="%d" DesktopApplicationLinkPath="%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\GOG.com\GameTiles\%s.lnk" />`
+
+const partialStartLayoutEnd = `
+        </start:Group>
+      </defaultlayout:StartLayout>
+    </StartLayoutCollection>
+  </DefaultLayoutOverride>
+</LayoutModificationTemplate>`
+
+const powershellCreateShortcut = `Invoke-WebRequest -Uri https://images.gog.com/%s?namespace=gamesdb -OutFile "%s.png"
+$WScriptShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WScriptShell.CreateShortcut("%s.lnk")
+$Shortcut.TargetPath = "%s.bat"
+$Shortcut.Save()`
+
+const powershellApplyStartLayout = `$fileName = "$(Get-Location)\data\PartialStartLayout.xml"
+Export-StartLayout -Path "$(Get-Location)\data\StartLayoutBackup.xml"
+
+$WindowsUpdateRegKey = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
+if(-not (Test-Path $WindowsUpdateRegKey))
+{
+	New-Item -Path $WindowsUpdateRegKey -Force
+}
+Set-ItemProperty -Path $WindowsUpdateRegKey -Name StartLayoutFile -Value "$fileName" -Type ExpandString
+Set-ItemProperty -Path $WindowsUpdateRegKey -Name LockedStartLayout -Value 1 -Type DWord
+Stop-Process -ProcessName explorer
+sleep 10
+Set-ItemProperty -Path $WindowsUpdateRegKey -Name LockedStartLayout -Value 0 -Type DWord
+Stop-Process -ProcessName explorer`
+
+const visualElements = `<?xml version="1.0" encoding="utf-8"?>
+<Application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<VisualElements ShowNameOnSquare150x150Logo="on" Square150x150Logo="VisualElements\MediumIcon%[1]s.png" Square70x70Logo="VisualElements\MediumIcon%[1]s.png" ForegroundText="light" BackgroundColor="#5A391B" />
+</Application>`
+
 func execPowershell(cmdText string, args ...interface{}) {
 	fileName := "tmp.ps1"
 	writeFile(fileName, fmt.Sprintf(cmdText, args...))
@@ -34,7 +83,7 @@ func execPowershell(cmdText string, args ...interface{}) {
 	}
 	for _, line := range strings.Split(stdout.String(), "\r\n") {
 		if len(line) > 0 {
-			log.Info(strings.TrimRight(line, " "))
+			log.Debug(strings.TrimRight(line, " "))
 		}
 	}
 	os.Remove(fileName)
@@ -49,6 +98,7 @@ func writeFile(filePath string, contents string) {
 func main() {
 	loglevel := flag.String("level", "INFO", "log level")
 	flag.Parse()
+
 	level, _ := log.ParseLevel(*loglevel)
 	log.SetLevel(level)
 
@@ -57,13 +107,8 @@ func main() {
 	}
 
 	log.Info("Reading GOG Galaxy 2.0 database...")
-	database, _ := sql.Open("sqlite3", "./data/galaxy-2.0.db")
-	database.Exec("PRAGMA wal_checkpoint")
-	rows, _ := database.Query(`
-		SELECT UserReleaseTags.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseTags
-		LEFT JOIN WebCacheResources ON UserReleaseTags.releaseKey = WebCacheResources.releaseKey
-		LEFT JOIN GamePieces ON UserReleaseTags.releaseKey = GamePieces.releaseKey
-		WHERE UserReleaseTags.tag = 'StartMenuTiles' AND WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`)
+	database, _ := sql.Open("sqlite3", "./data/galaxy-2.0.db?mode=ro")
+	rows, _ := database.Query(sqlTaggedGames)
 	database.Close()
 
 	log.Info("Parsing games...")
@@ -92,63 +137,27 @@ func main() {
 		log.Fatal("Error while creating Start Menu folder:", err)
 	}
 
-	appendText := `        <start:Group Name="GOG Galaxy 2.0 Games">`
+	log.Info("Creating Start Menu...")
+	appendText := partialStartLayoutBegin
 	tileCount := 0
 	for key, val := range games {
-		appendText += "\r\n" + fmt.Sprintf(`          <start:DesktopApplicationTile Size="2x2" Column="%d" Row="%d" DesktopApplicationLinkPath="%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\GOG.com\GameTiles\%s.lnk" />`,
+		appendText += fmt.Sprintf(startLayoutTile,
 			(tileCount%4)*2,
 			(tileCount-(tileCount%4))/4,
 			val["title"])
 		tileCount++
 		writeFile(startMenuPath+key+".bat",
 			`"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+key)
-		writeFile(startMenuPath+key+".VisualElementsManifest.xml",
-			`<?xml version="1.0" encoding="utf-8"?>
-<Application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	<VisualElements ShowNameOnSquare150x150Logo="on" Square150x150Logo="VisualElements\MediumIcon`+key+`.png" Square70x70Logo="VisualElements\MediumIcon`+key+`.png" ForegroundText="light" BackgroundColor="#5A391B" />
-</Application>`)
+		writeFile(startMenuPath+key+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, key))
 
-		execPowershell(`Invoke-WebRequest -Uri https://images.gog.com/%s?namespace=gamesdb -OutFile "%s.png"
-$SourceFileLocation = "%s.bat"
-$ShortcutLocation = "%s.lnk"
-$WScriptShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WScriptShell.CreateShortcut("$ShortcutLocation")
-$Shortcut.TargetPath = "$SourceFileLocation"
-$Shortcut.Save()`,
-			val["iconFileName"],
-			startMenuPath+"VisualElements\\MediumIcon"+key,
-			startMenuPath+key,
-			startMenuPath+val["title"])
+		execPowershell(powershellCreateShortcut,
+			val["iconFileName"], startMenuPath+"VisualElements\\MediumIcon"+key, startMenuPath+val["title"], startMenuPath+key)
 	}
 
-	appendText += "\r\n        </start:Group>"
-	writeFile("append.xml", appendText)
+	appendText += partialStartLayoutEnd
+	writeFile("data\\PartialStartLayout.xml", appendText)
 
 	log.Info("Updating Start Menu...")
-	execPowershell(`$fileName = "$(Get-Location)\data\startmenu.xml"
-Export-StartLayout -Path $fileName
-Copy-Item $fileName $fileName.old
-
-(Get-Content $fileName) | 
-	Foreach-Object {
-		if ($_ -match "</defaultlayout:StartLayout>") 
-		{
-			"$(cat append.xml)"
-		}
-		$_ # send the current line to output
-	} | Set-Content $fileName
-
-$WindowsUpdateRegKey = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
-if(-not (Test-Path $WindowsUpdateRegKey))
-{
-	New-Item -Path $WindowsUpdateRegKey -Force
-}
-Set-ItemProperty -Path $WindowsUpdateRegKey -Name StartLayoutFile -Value "$fileName" -Type ExpandString
-Set-ItemProperty -Path $WindowsUpdateRegKey -Name LockedStartLayout -Value 1 -Type DWord
-Stop-Process -ProcessName explorer
-sleep 5
-Set-ItemProperty -Path $WindowsUpdateRegKey -Name LockedStartLayout -Value 0 -Type DWord
-Stop-Process -ProcessName explorer`)
-	os.Remove("append.xml")
+	execPowershell(powershellApplyStartLayout)
 	log.Info("Program finished!")
 }

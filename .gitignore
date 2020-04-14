@@ -32,4 +32,5 @@
 
 # End of https://www.gitignore.io/api/go,code
 
-data/
+PartialStartLayout.xml
+StartLayoutBackup.xml

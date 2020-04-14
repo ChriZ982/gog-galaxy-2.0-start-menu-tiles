@@ -1,24 +1,41 @@
-
-# <img height="25" src="https://simpleicons.org/icons/gog-dot-com.svg"/> GOG Galaxy 2.0 Start Menu Tiles
+# <img height="25" src="https://simpleicons.org/icons/gog-dot-com.svg"/> WIP: GOG Galaxy 2.0 Start Menu Tiles
 [![PayPal.Me ChriZ98](https://img.shields.io/badge/GOG-Galaxy%202.0-86328A?logo=data:https://simpleicons.org/icons/gog-dot-com.svg)](https://www.gogalaxy.com/en/) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub stars](https://img.shields.io/github/stars/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub top language](https://img.shields.io/github/languages/top/ChriZ982/gog-galaxy-2.0-start-menu-tiles) [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)
 
-ADD DESCRIPTION TEXT! :rocket:
+**Disclaimer: This is in a highly experimental stage and might break your Start Menu or your Windows Registry! Use at own risk!**
+
+This script lets you create Start Menu Tiles of your favourite games in Windows 10! :video_game: 
+
+Examples:
+![Startmenu Picture](examples/startmenu1.jpeg) ![Startmenu Picture](examples/startmenu2.jpeg)
 
 ## :sparkles: Planned Features
-* [ ] ADD PLANNED FEATURES
+* [ ] Add build pipeline
+* [ ] Remember tiles and remove old image files
+* [ ] Possibility to choose different icon image source
+* [ ] Add custom Start Menu group name setting
+* [ ] Test whether registry folder exists
 
 ## :hammer_and_wrench: Usage
 ```
 Usage of GOG_Galaxy_Start_Menu.exe:
-  -level string
-        log level (default "INFO")
+ -database string
+    Path to GOG Galaxy 2.0 database. (default "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db")
+ -layoutWidth int
+    Defines the tile count per row in the Start Menu Layout (3 or 4). (default 3)
+ -level string
+    Defines log level. (default "INFO")
+ -startFolder string
+    Path for game shortcuts and image data. (default "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/")
+ -tileSize int
+    Size of the individual game tiles (1 or 2). (default 2)
 ```
+
 ## :earth_africa: Contributing
 If you find any issues or have some improvement ideas, please [create an issue](../../issues/new/choose). Also feel free to fork the repo and create a pull request when you have finished your implementation. :page_with_curl:
 
 If your feature is a good addition to the project, it will be merged!
 
-##  :sparkling_heart: Support my projects
+## :sparkling_heart: Support my projects
 If you like the project and you want to support me - please consider to gift using the button below.
 
 [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)

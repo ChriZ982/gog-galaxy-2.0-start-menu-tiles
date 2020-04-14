@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/shiena/ansicolor"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,7 +30,7 @@ const partialStartLayoutBegin = `<LayoutModificationTemplate xmlns:defaultlayout
 		<start:Group Name="">`
 
 const startLayoutTile = `
-          <start:DesktopApplicationTile Size="2x2" Column="%d" Row="%d" DesktopApplicationLinkPath="%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\GOG.com\GameTiles\%s.lnk" />`
+          <start:DesktopApplicationTile Size="%[1]dx%[1]d" Column="%[2]d" Row="%[3]d" DesktopApplicationLinkPath="%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\GOG.com\GameTiles\%[4]s.lnk" />`
 
 const partialStartLayoutEnd = `
         </start:Group>
@@ -44,8 +45,9 @@ $Shortcut = $WScriptShell.CreateShortcut("%s.lnk")
 $Shortcut.TargetPath = "%s.bat"
 $Shortcut.Save()`
 
-const powershellApplyStartLayout = `$fileName = "$(Get-Location)\data\PartialStartLayout.xml"
-Export-StartLayout -Path "$(Get-Location)\data\StartLayoutBackup.xml"
+const powershellApplyStartLayout = `$fileName = "$(Get-Location)\PartialStartLayout.xml"
+Export-StartLayout -Path "StartLayoutBackup.xml"
+sleep 5
 
 $WindowsUpdateRegKey = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
 if(-not (Test-Path $WindowsUpdateRegKey))
@@ -63,6 +65,117 @@ const visualElements = `<?xml version="1.0" encoding="utf-8"?>
 <Application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<VisualElements ShowNameOnSquare150x150Logo="on" Square150x150Logo="VisualElements\MediumIcon%[1]s.png" Square70x70Logo="VisualElements\MediumIcon%[1]s.png" ForegroundText="light" BackgroundColor="#5A391B" />
 </Application>`
+
+var alphanum = regexp.MustCompile("[^A-Za-z0-9 ]+")
+
+var loglevel = flag.String("level", "INFO", "Defines log level.")
+var databaseFile = flag.String("database", "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db", "Path to GOG Galaxy 2.0 database.")
+var startMenuDir = flag.String("startFolder", "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/", "Path for game shortcuts and image data.")
+var width = flag.Int("layoutWidth", 3, "Defines the tile count per row in the Start Menu Layout (3 or 4).")
+var tileSize = flag.Int("tileSize", 2, "Size of the individual game tiles (1 or 2).")
+
+func main() {
+	flag.Parse()
+
+	log.SetFormatter(&log.TextFormatter{ForceColors: true})
+	log.SetOutput(ansicolor.NewAnsiColorWriter(os.Stdout))
+	level, err := log.ParseLevel(*loglevel)
+	if err != nil {
+		log.Fatalf("Log level '%s' not recognized. %s", *loglevel, err)
+	}
+	log.SetLevel(level)
+
+	if runtime.GOOS != "windows" {
+		log.Fatal("This App does only support Windows 10!")
+	}
+	if *width != 3 && *width != 4 {
+		log.Fatal("layoutWidth has to be 3 or 4.")
+	}
+	if *tileSize != 1 && *tileSize != 2 {
+		log.Fatal("tileSize has to be 1 or 2.")
+	}
+
+	games := listGames()
+	createStartMenu(games)
+}
+
+func listGames() *map[string]map[string]string {
+	log.Info("Reading GOG Galaxy 2.0 database...")
+	database, err := sql.Open("sqlite3", *databaseFile+"?mode=ro")
+	if err != nil {
+		log.Fatalf("Error while trying to open GOG Galaxy 2.0 database at '%s'. %s", *databaseFile, err)
+	}
+	rows, err := database.Query(sqlTaggedGames)
+	if err != nil {
+		log.Fatal("Error while running query on database. ", err)
+	}
+	database.Close()
+
+	log.Info("Parsing games...")
+	var games map[string]map[string]string = make(map[string]map[string]string)
+	var releaseKey string
+	var iconFileName string
+	var title string
+	for rows.Next() {
+		rows.Scan(&releaseKey, &iconFileName, &title)
+		extractedTitle := alphanum.ReplaceAllString(strings.Split(title, ":")[1], "")
+		alreadyExisting := false
+		for _, val := range games {
+			if val["title"] == extractedTitle {
+				alreadyExisting = true
+				break
+			}
+		}
+		if alreadyExisting {
+			continue
+		}
+		if _, ok := games[releaseKey]; !ok {
+			games[releaseKey] = make(map[string]string)
+		}
+		games[releaseKey]["iconFileName"] = strings.ReplaceAll(iconFileName, ".webp", ".png")
+		games[releaseKey]["title"] = extractedTitle
+	}
+	return &games
+}
+
+func createStartMenu(games *map[string]map[string]string) {
+	log.Info("Creating shortcuts...")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Could not find users home directory. ", err)
+	}
+	startMenuPath := home + *startMenuDir
+	err = os.MkdirAll(startMenuPath+"VisualElements", os.ModePerm)
+	if err != nil {
+		log.Fatal("Error while creating Start Menu folder. ", err)
+	}
+
+	log.Info("Creating Start Menu layout...")
+	partialStartLayout := partialStartLayoutBegin
+	tileCount := 0
+	actualWidth := *width * (3 - *tileSize)
+	for key, val := range *games {
+		partialStartLayout += fmt.Sprintf(startLayoutTile,
+			*tileSize,
+			(tileCount%actualWidth)*(*tileSize),
+			(tileCount-(tileCount%actualWidth))/actualWidth*(*tileSize),
+			val["title"])
+		tileCount++
+		writeFile(startMenuPath+key+".bat",
+			`"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+key)
+		writeFile(startMenuPath+key+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, key))
+
+		execPowershell(powershellCreateShortcut,
+			val["iconFileName"], startMenuPath+"VisualElements\\MediumIcon"+key, startMenuPath+val["title"], startMenuPath+key)
+	}
+
+	partialStartLayout += partialStartLayoutEnd
+	writeFile("PartialStartLayout.xml", partialStartLayout)
+
+	log.Info("Updating Start Menu...")
+	execPowershell(powershellApplyStartLayout)
+	log.Info("Program finished!")
+}
 
 func execPowershell(cmdText string, args ...interface{}) {
 	fileName := "tmp.ps1"
@@ -90,74 +203,13 @@ func execPowershell(cmdText string, args ...interface{}) {
 }
 
 func writeFile(filePath string, contents string) {
-	f, _ := os.Create(filePath)
-	f.WriteString(contents)
+	f, err := os.Create(filePath)
+	if err != nil {
+		log.Fatalf("Could not open or create file '%s'. %s", filePath, err)
+	}
+	_, err = f.WriteString(contents)
+	if err != nil {
+		log.Fatal("Could not write to file. ", err)
+	}
 	f.Close()
-}
-
-func main() {
-	loglevel := flag.String("level", "INFO", "log level")
-	flag.Parse()
-
-	level, _ := log.ParseLevel(*loglevel)
-	log.SetLevel(level)
-
-	if runtime.GOOS != "windows" {
-		log.Fatal("This App does only support Windows 10!")
-	}
-
-	log.Info("Reading GOG Galaxy 2.0 database...")
-	database, _ := sql.Open("sqlite3", "./data/galaxy-2.0.db?mode=ro")
-	rows, _ := database.Query(sqlTaggedGames)
-	database.Close()
-
-	log.Info("Parsing games...")
-	var games map[string]map[string]string = make(map[string]map[string]string)
-	var releaseKey string
-	var iconFileName string
-	var title string
-	reg, err := regexp.Compile("[^A-Za-z0-9 ]+")
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		rows.Scan(&releaseKey, &iconFileName, &title)
-		if _, ok := games[releaseKey]; !ok {
-			games[releaseKey] = make(map[string]string)
-		}
-		games[releaseKey]["iconFileName"] = strings.ReplaceAll(iconFileName, ".webp", ".png")
-		games[releaseKey]["title"] = reg.ReplaceAllString(strings.Split(title, ":")[1], "")
-	}
-
-	log.Info("Creating shortcuts...")
-	home, _ := os.UserHomeDir()
-	startMenuPath := home + "\\Appdata\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\GOG.com\\GameTiles\\"
-	err = os.MkdirAll(startMenuPath+"VisualElements", os.ModePerm)
-	if err != nil {
-		log.Fatal("Error while creating Start Menu folder:", err)
-	}
-
-	log.Info("Creating Start Menu...")
-	appendText := partialStartLayoutBegin
-	tileCount := 0
-	for key, val := range games {
-		appendText += fmt.Sprintf(startLayoutTile,
-			(tileCount%4)*2,
-			(tileCount-(tileCount%4))/4,
-			val["title"])
-		tileCount++
-		writeFile(startMenuPath+key+".bat",
-			`"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+key)
-		writeFile(startMenuPath+key+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, key))
-
-		execPowershell(powershellCreateShortcut,
-			val["iconFileName"], startMenuPath+"VisualElements\\MediumIcon"+key, startMenuPath+val["title"], startMenuPath+key)
-	}
-
-	appendText += partialStartLayoutEnd
-	writeFile("data\\PartialStartLayout.xml", appendText)
-
-	log.Info("Updating Start Menu...")
-	execPowershell(powershellApplyStartLayout)
-	log.Info("Program finished!")
 }

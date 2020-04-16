@@ -1,0 +1,19 @@
+os: windows
+language: go
+go:
+- 1.14.x
+before_install:
+- cinst dep -y
+install:
+- dep ensure
+script:
+- go build -o GOG_Galaxy_Start_Menu.exe
+deploy:
+  provider: releases
+  api_key:
+    secure: VE5o1cK46Dd8MpLJXZk/yQhUg8U73/P3r5Fcqv0Z1LcZnmFpWmTL6T8RHLiWeN2DZrKiz/T4oHYhbAkWmTire9n7xcWF68e+KIvvLjYnUp8+KX2sbGvIzJg9Zqby0d4NDYexEGQ91oGG86hQrxm+j9/CeWs1luUV2qkVKR3M3yypSF34dxBcD0Q0209N9Hhe70eRXXhy+kHhdhTxMHvmVXG3M/y62i+77XTn8hzUUr3DmuUIWqVnXRfT5SCnrOuDZJYKln0iW0m4kjykNwazyIlFdbIqpDHqpzUpik2E8M+LpJtAnQaWlfAKJx3GlPeCOfmIeG+Cd/S3DLgTd2Get5pGkE2fCzzXbvTJXdqucscdmtBv9oekxfTC4lJ1gprEvws7M9FOkuTtSuW8rMRiRxqB7tNmzcqQVXJh8zKJ+ZLXmA1W4jsr7ymep40Eg7vu48hWcBXyo57Sf37i2413XHx4oxmSbhM526RBw+V0dm/1kOq3ZsZGcNuzR92zBfIIaG6K/LHeTiP0zAiQ4VuQMjDr5oqpID9s2ca6uVUr24tfkU7MvgA0fr7r3HAHdwaiVNSZYPUQsCN9FP1rEpn0TNPALCfm5btKoGywo7E2Y03wWH0xfZ7+8xm7lYF13ejx2jgCpAHNdOUYDp60WH/eLCRfGpLPORurxZuCR9iatIw=
+  file: GOG_Galaxy_Start_Menu.exe
+  skip_cleanup: true
+  on:
+    repo: ChriZ982/gog-galaxy-2.0-start-menu-tiles
+    tags: true

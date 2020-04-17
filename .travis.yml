@@ -7,7 +7,7 @@ before_install:
 install:
 - dep ensure
 script:
-- go build -o GOG_Galaxy_Start_Menu.exe
+- go build -o GOG_Galaxy_Start_Menu.exe ./src/
 deploy:
   provider: releases
   api_key:

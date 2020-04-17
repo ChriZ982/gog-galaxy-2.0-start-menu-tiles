@@ -14,25 +14,28 @@ This script lets you create Start Menu Tiles of your favourite games in Windows 
 </table>
 
 ## :sparkles: Planned Features
-* [ ] Add build pipeline
+* [x] Add build pipeline
 * [ ] Remember tiles and remove old image files
 * [ ] Possibility to choose different icon image source
-* [ ] Add custom Start Menu group name setting
-* [ ] Test whether registry folder exists
+* [x] Add custom Start Menu group name setting
+* [x] Test whether registry folder exists
 
 ## :hammer_and_wrench: Usage
 ```
 Usage of GOG_Galaxy_Start_Menu.exe:
- -database string
-    Path to GOG Galaxy 2.0 database. (default "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db")
- -layoutWidth int
-    Defines the tile count per row in the Start Menu Layout (3 or 4). (default 3)
- -level string
-    Defines log level. (default "INFO")
- -startFolder string
-    Path for game shortcuts and image data. (default "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/")
- -tileSize int
-    Size of the individual game tiles (1 or 2). (default 2)
+  -database string
+        Path to GOG Galaxy 2.0 database. (default "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db")
+  -groupName string
+        Name of the Start Menu group.
+  -layoutWidth int
+        Defines the tile count per row in the Start Menu Layout (3 or 4). (default 3)
+  -level string
+        Defines log level. (default "INFO")
+  -startFolder string
+        Path for game shortcuts and image data. (default "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/")
+  -tileSize int
+        Size of the individual game tiles (1 or 2). (default 2)
+  -y    Always confirm creation of Start Layout.
 ```
 
 ## :earth_africa: Contributing

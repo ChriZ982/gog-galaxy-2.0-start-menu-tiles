@@ -35,9 +35,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f88172369bcdae548777d8f2c59b11561f7e41686f426c583a7abaeec6978cc7"
+  digest = "1:c0799dc71737f71b4f67da6347e5e838a2334d3156d40b3282079864e7f86337"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows",
+    "windows/registry",
+  ]
   pruneopts = "UT"
   revision = "669c56c373c468cbe0f0c12b7939832b26088d33"
 
@@ -48,6 +52,7 @@
     "github.com/mattn/go-sqlite3",
     "github.com/shiena/ansicolor",
     "github.com/sirupsen/logrus",
+    "golang.org/x/sys/windows/registry",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

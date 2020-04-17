@@ -1,15 +1,21 @@
-# <img height="25" src="https://simpleicons.org/icons/gog-dot-com.svg"/> WIP: GOG Galaxy 2.0 Start Menu Tiles
-[![GOG Galaxy 2.0](https://img.shields.io/badge/GOG-Galaxy%202.0-86328A?logo=data:https://simpleicons.org/icons/gog-dot-com.svg)](https://www.gogalaxy.com/en/) ![Build status](https://travis-ci.org/ChriZ982/gog-galaxy-2.0-start-menu-tiles.svg?branch=master) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub stars](https://img.shields.io/github/stars/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub top language](https://img.shields.io/github/languages/top/ChriZ982/gog-galaxy-2.0-start-menu-tiles) [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)
+# <img height="25" src="https://simpleicons.org/icons/gog-dot-com.svg"/> GOG Galaxy 2.0 Start Menu Tiles
+[![GOG Galaxy 2.0](https://img.shields.io/badge/GOG-Galaxy%202.0-86328A?logo=data:https://simpleicons.org/icons/gog-dot-com.svg)](https://www.gogalaxy.com/en/) [![Build status](https://travis-ci.org/ChriZ982/gog-galaxy-2.0-start-menu-tiles.svg?branch=master)](https://travis-ci.org/github/ChriZ982/gog-galaxy-2.0-start-menu-tiles/branches) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ChriZ982/gog-galaxy-2.0-start-menu-tiles)](https://github.com/ChriZ982/gog-galaxy-2.0-start-menu-tiles/releases) ![GitHub stars](https://img.shields.io/github/stars/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub top language](https://img.shields.io/github/languages/top/ChriZ982/gog-galaxy-2.0-start-menu-tiles) [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)
 
-## **Disclaimer: This is in a highly experimental stage and might break your Start Menu or your Windows Registry! Use at own risk!**
+This script lets you create Start Menu Tiles of your favourite games in Windows 10! :video_game:
 
-This script lets you create Start Menu Tiles of your favourite games in Windows 10! :video_game: 
+Simply download the `GOG_Galaxy_Start_Menu.exe` from the Releases section. Your GOG Galaxy 2.0 database will be read and a shortcut will be created in the Programs section. Additionally tiles can be automatically added to the Start Menu, providing a stylish and easy access.
+
+**Disclaimer: If you have applied a Start Menu Layout previosly, all changes will be reverted and all tiles will be deleted! This can be the case for computers managed by organizations.**
 
 #### Examples:
 <table>
   <tr>
-    <td><img alt="Startmenu Picture" src="examples/startmenu1.jpeg" /></td>
-    <td><img alt="Startmenu Picture" src="examples/startmenu2.jpeg" /></td>
+    <td><img alt="Startmenu Picture 1" src="examples/startmenu1.jpeg" /></td>
+    <td><img alt="Startmenu Picture 2" src="examples/startmenu2.jpeg" /></td>
+  </tr>
+  <tr>
+    <td><img alt="Startmenu Picture 3" src="examples/startmenu3.jpeg" /></td>
+    <td></td>
   </tr>
 </table>
 
@@ -25,16 +31,24 @@ This script lets you create Start Menu Tiles of your favourite games in Windows 
 Usage of GOG_Galaxy_Start_Menu.exe:
   -database string
         Path to GOG Galaxy 2.0 database. (default "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db")
+  -force
+        Force re-download of images.
   -groupName string
         Name of the Start Menu group.
-  -layoutWidth int
-        Defines the tile count per row in the Start Menu Layout (3 or 4). (default 3)
+  -height int
+        Defines the rows per group Start Menu Layout. (default 7)
+  -hideName
+        Show name of game on Start Menu Tile.
   -level string
         Defines log level. (default "INFO")
   -startFolder string
         Path for game shortcuts and image data. (default "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/")
+  -tagName string
+        Define a custom tag that defines games to be added to the Start Menu. You can also set it to INSTALLED or ALL to add installed or all games to the StartMenu. (default "StartMenuTiles")
   -tileSize int
         Size of the individual game tiles (1 or 2). (default 2)
+  -width int
+        Defines the tile count per row in the Start Menu Layout (3 or 4). (default 3)
   -y    Always confirm creation of Start Layout.
 ```
 

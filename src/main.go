@@ -20,23 +20,32 @@ import (
 )
 
 const sqlTaggedGames = `SELECT UserReleaseTags.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseTags
-LEFT JOIN WebCacheResources ON UserReleaseTags.releaseKey = WebCacheResources.releaseKey
+LEFT JOIN WebCache ON UserReleaseTags.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
 LEFT JOIN GamePieces ON UserReleaseTags.releaseKey = GamePieces.releaseKey
-WHERE UserReleaseTags.tag = ? AND WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE UserReleaseTags.tag = ? AND WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title'  AND GamePieces.userId <> 0`
 
 const sqlInstalledGames = `SELECT Installed.releaseKey, WebCacheResources.filename, GamePieces.value FROM
 	(SELECT 'gog_' || productId as releaseKey FROM InstalledBaseProducts
 	UNION ALL
 	SELECT Platforms.name || '_' || productId as releaseKey FROM InstalledExternalProducts
 	JOIN Platforms ON InstalledExternalProducts.platformId = Platforms.id) as Installed
-LEFT JOIN WebCacheResources ON Installed.releaseKey = WebCacheResources.releaseKey
+LEFT JOIN WebCache ON Installed.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
 LEFT JOIN GamePieces ON Installed.releaseKey = GamePieces.releaseKey
-WHERE WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title' AND GamePieces.userId <> 0`
 
-const sqlAllGames = `SELECT OwnedGames.releaseKey, WebCacheResources.filename, GamePieces.value FROM OwnedGames
-LEFT JOIN WebCacheResources ON OwnedGames.releaseKey = WebCacheResources.releaseKey
-LEFT JOIN GamePieces ON OwnedGames.releaseKey = GamePieces.releaseKey
-WHERE WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND OwnedGames.userId <> 0 AND GamePieces.userId <> 0`
+const sqlAllGames = `SELECT UserReleaseProperties.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseProperties
+LEFT JOIN WebCache ON UserReleaseProperties.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
+LEFT JOIN GamePieces ON UserReleaseProperties.releaseKey = GamePieces.releaseKey
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title' AND UserReleaseProperties.userId <> 0 AND GamePieces.userId <> 0`
 
 // Uses a partial Start Layout (https://docs.microsoft.com/en-us/windows/configuration/customize-and-export-start-layout#configure-a-partial-start-layout)
 const partialStartLayoutBegin = `<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
@@ -182,16 +191,16 @@ func createStartMenu(games *[]Game) {
 	allPowershellCreateShortcut := "$WScriptShell = New-Object -ComObject WScript.Shell\n"
 	allPowershellDownloadImage := ""
 	for _, game := range *games {
+		if tileCount >= maxTiles {
+			tileCount = 0
+			partialStartLayout += fmt.Sprintf(newGroup, *groupName)
+		}
 		partialStartLayout += fmt.Sprintf(startLayoutTile,
 			*tileSize,
 			(tileCount%actualWidth)*(*tileSize),
 			(tileCount-(tileCount%actualWidth))/actualWidth*(*tileSize),
 			game.Title)
 		tileCount++
-		if tileCount >= maxTiles {
-			tileCount = 0
-			partialStartLayout += fmt.Sprintf(newGroup, *groupName)
-		}
 		writeFile(startMenuPath+game.FileName+".bat", `"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+game.ReleaseKey)
 		writeFile(startMenuPath+game.FileName+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, game.FileName, nameOnLogo))
 		if !fileExists(startMenuPath+"VisualElements\\MediumIcon"+game.FileName+".png") || *force {

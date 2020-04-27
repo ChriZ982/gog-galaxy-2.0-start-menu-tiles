@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}/src/",
             "env": {"CGO_ENABLED":1},
-            "args": ["-level", "DEBUG", "-width", "4", "-tileSize", "2", "-groupName", "GOG Galaxy 2.0 Games", "-y", "-tagName", "INSTALLED", "-hideName"]
+            "args": ["-level", "DEBUG", "-width", "4", "-tileSize", "2", "-groupName", "GOG Galaxy 2.0 Games", "-y", "-tagName", "INSTALLED"]
         }
     ]
 }

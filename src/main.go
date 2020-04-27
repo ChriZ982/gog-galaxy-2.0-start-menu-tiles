@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,23 +20,32 @@ import (
 )
 
 const sqlTaggedGames = `SELECT UserReleaseTags.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseTags
-LEFT JOIN WebCacheResources ON UserReleaseTags.releaseKey = WebCacheResources.releaseKey
+LEFT JOIN WebCache ON UserReleaseTags.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
 LEFT JOIN GamePieces ON UserReleaseTags.releaseKey = GamePieces.releaseKey
-WHERE UserReleaseTags.tag = ? AND WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE UserReleaseTags.tag = ? AND WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title'  AND GamePieces.userId <> 0`
 
 const sqlInstalledGames = `SELECT Installed.releaseKey, WebCacheResources.filename, GamePieces.value FROM
 	(SELECT 'gog_' || productId as releaseKey FROM InstalledBaseProducts
 	UNION ALL
 	SELECT Platforms.name || '_' || productId as releaseKey FROM InstalledExternalProducts
 	JOIN Platforms ON InstalledExternalProducts.platformId = Platforms.id) as Installed
-LEFT JOIN WebCacheResources ON Installed.releaseKey = WebCacheResources.releaseKey
+LEFT JOIN WebCache ON Installed.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
 LEFT JOIN GamePieces ON Installed.releaseKey = GamePieces.releaseKey
-WHERE WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND GamePieces.userId <> 0`
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title' AND GamePieces.userId <> 0`
 
-const sqlAllGames = `SELECT OwnedGames.releaseKey, WebCacheResources.filename, GamePieces.value FROM OwnedGames
-LEFT JOIN WebCacheResources ON OwnedGames.releaseKey = WebCacheResources.releaseKey
-LEFT JOIN GamePieces ON OwnedGames.releaseKey = GamePieces.releaseKey
-WHERE WebCacheResources.webCacheResourceTypeId = 2 AND GamePieces.gamePieceTypeId = 11 AND OwnedGames.userId <> 0 AND GamePieces.userId <> 0`
+const sqlAllGames = `SELECT UserReleaseProperties.releaseKey, WebCacheResources.filename, GamePieces.value FROM UserReleaseProperties
+LEFT JOIN WebCache ON UserReleaseProperties.releaseKey = WebCache.releaseKey
+LEFT JOIN WebCacheResources ON WebCache.id = WebCacheResources.webCacheId
+LEFT JOIN WebCacheResourceTypes ON WebCacheResourceTypes.id = WebCacheResources.webCacheResourceTypeId
+LEFT JOIN GamePieces ON UserReleaseProperties.releaseKey = GamePieces.releaseKey
+LEFT JOIN GamePieceTypes ON GamePieceTypes.id = GamePieces.gamePieceTypeId
+WHERE WebCacheResourceTypes.type = 'squareIcon' AND GamePieceTypes.type = 'title' AND UserReleaseProperties.userId <> 0 AND GamePieces.userId <> 0`
 
 // Uses a partial Start Layout (https://docs.microsoft.com/en-us/windows/configuration/customize-and-export-start-layout#configure-a-partial-start-layout)
 const partialStartLayoutBegin = `<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
@@ -112,62 +122,52 @@ func main() {
 	log.Info("Program finished!")
 }
 
-func listGames() *map[string]map[string]string {
+func listGames() *[]Game {
 	log.Info("Reading GOG Galaxy 2.0 database...")
 	database, err := sql.Open("sqlite3", *databaseFile+"?mode=ro")
+	defer database.Close()
 	if err != nil {
 		log.Fatalf("Error while trying to open GOG Galaxy 2.0 database at '%s'. %s", *databaseFile, err)
 	}
 	var rows *sql.Rows
-	if *tagName == "INSTALLED" {
+	switch *tagName {
+	case "INSTALLED":
 		rows, err = database.Query(sqlInstalledGames)
-	} else if *tagName == "ALL" {
+	case "ALL":
 		rows, err = database.Query(sqlAllGames)
-	} else {
+	default:
 		rows, err = database.Query(sqlTaggedGames, *tagName)
 	}
 	if err != nil {
 		log.Fatal("Error while running query on database. ", err)
 	}
-	database.Close()
 
 	log.Info("Parsing games...")
-	var games map[string]map[string]string = make(map[string]map[string]string)
-	var releaseKey string
-	var iconFileName string
-	var title string
+	var games []Game
 	for rows.Next() {
-		rows.Scan(&releaseKey, &iconFileName, &title)
-		extractedTitle := disallowedChars.ReplaceAllString(strings.Split(title, ":")[1], "")
-		alreadyExisting := false
-		for _, val := range games {
-			if val["title"] == extractedTitle {
-				alreadyExisting = true
-				break
-			}
+		var game Game
+		rows.Scan(&game.ReleaseKey, &game.IconFileName, &game.Title)
+		game.Sanitize(disallowedChars)
+		if !game.ExistsIn(games) {
+			games = append(games, game)
 		}
-		if alreadyExisting {
-			continue
-		}
-		if _, ok := games[releaseKey]; !ok {
-			games[releaseKey] = make(map[string]string)
-		}
-		games[releaseKey]["iconFileName"] = strings.ReplaceAll(iconFileName, ".webp", ".png")
-		games[releaseKey]["title"] = extractedTitle
 	}
-	if len(games) == 0 {
+	sort.Slice(games, func(i, j int) bool {
+		return games[i].Title < games[j].Title
+	})
+
+	switch {
+	case len(games) == 0:
 		log.Fatal("No games found.")
-	}
-	if len(games) > 150 {
+	case len(games) > 150:
 		log.Fatalf("Adding too many tiles causes unexpected behaviour. %d tiles can not be created safely.", len(games))
-	}
-	if len(games) > 80 {
+	case len(games) > 80:
 		log.Warnf("Adding too many tiles causes unexpected behaviour. %d tiles will be added.", len(games))
 	}
 	return &games
 }
 
-func createStartMenu(games *map[string]map[string]string) {
+func createStartMenu(games *[]Game) {
 	log.Info("Creating shortcuts...")
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -190,24 +190,23 @@ func createStartMenu(games *map[string]map[string]string) {
 	}
 	allPowershellCreateShortcut := "$WScriptShell = New-Object -ComObject WScript.Shell\n"
 	allPowershellDownloadImage := ""
-	for key, val := range *games {
-		partialStartLayout += fmt.Sprintf(startLayoutTile,
-			*tileSize,
-			(tileCount%actualWidth)*(*tileSize),
-			(tileCount-(tileCount%actualWidth))/actualWidth*(*tileSize),
-			val["title"])
-		tileCount++
+	for _, game := range *games {
 		if tileCount >= maxTiles {
 			tileCount = 0
 			partialStartLayout += fmt.Sprintf(newGroup, *groupName)
 		}
-		plainKey := disallowedChars.ReplaceAllString(key, "")
-		writeFile(startMenuPath+plainKey+".bat", `"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+key)
-		writeFile(startMenuPath+plainKey+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, plainKey, nameOnLogo))
-		if !fileExists(startMenuPath+"VisualElements\\MediumIcon"+plainKey+".png") || *force {
-			allPowershellDownloadImage += fmt.Sprintf(powershellDownloadImage+"\n", val["iconFileName"], startMenuPath+"VisualElements\\MediumIcon"+plainKey)
+		partialStartLayout += fmt.Sprintf(startLayoutTile,
+			*tileSize,
+			(tileCount%actualWidth)*(*tileSize),
+			(tileCount-(tileCount%actualWidth))/actualWidth*(*tileSize),
+			game.Title)
+		tileCount++
+		writeFile(startMenuPath+game.FileName+".bat", `"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe" /command=runGame /gameId=`+game.ReleaseKey)
+		writeFile(startMenuPath+game.FileName+".VisualElementsManifest.xml", fmt.Sprintf(visualElements, game.FileName, nameOnLogo))
+		if !fileExists(startMenuPath+"VisualElements\\MediumIcon"+game.FileName+".png") || *force {
+			allPowershellDownloadImage += fmt.Sprintf(powershellDownloadImage+"\n", game.IconFileName, startMenuPath+"VisualElements\\MediumIcon"+game.FileName)
 		}
-		allPowershellCreateShortcut += fmt.Sprintf(powershellCreateShortcut+"\n", startMenuPath+val["title"], startMenuPath+plainKey)
+		allPowershellCreateShortcut += fmt.Sprintf(powershellCreateShortcut+"\n", startMenuPath+game.Title, startMenuPath+game.FileName)
 	}
 	if len(allPowershellDownloadImage) > 0 {
 		execPowershell(allPowershellDownloadImage)
@@ -231,10 +230,10 @@ func updateRegistry() {
 	log.Info("Updating Start Menu...")
 	execPowershell("Export-StartLayout -Path StartLayoutBackup.xml")
 	key, _, err := registry.CreateKey(registry.CURRENT_USER, `Software\Policies\Microsoft\Windows\Explorer`, registry.ALL_ACCESS)
+	defer key.Close()
 	if err != nil {
 		log.Fatal("Could not create Registry Key. ", err)
 	}
-	defer key.Close()
 	values, err := key.ReadValueNames(0)
 	if err != nil {
 		log.Fatal("Could not list Registry values")
@@ -303,6 +302,7 @@ func execPowershell(cmdText string, args ...interface{}) {
 
 func writeFile(filePath string, contents string) {
 	f, err := os.Create(filePath)
+	defer f.Close()
 	if err != nil {
 		log.Fatalf("Could not open or create file '%s'. %s", filePath, err)
 	}
@@ -310,7 +310,6 @@ func writeFile(filePath string, contents string) {
 	if err != nil {
 		log.Fatal("Could not write to file. ", err)
 	}
-	f.Close()
 }
 
 func find(slice []string, val string) bool {

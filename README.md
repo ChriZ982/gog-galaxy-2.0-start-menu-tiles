@@ -5,7 +5,7 @@ This script lets you create Start Menu Tiles of your favourite games in Windows 
 
 Simply download the `GOG_Galaxy_Start_Menu.exe` from the Releases section. Your GOG Galaxy 2.0 database will be read and a shortcut will be created in the Programs section. Additionally tiles can be automatically added to the Start Menu, providing a stylish and easy access.
 
-**Disclaimer: If you have applied a Start Menu Layout previosly, all changes will be reverted and all tiles will be deleted! This can be the case for computers managed by organizations.**
+**Disclaimer: If you have applied a Start Menu Layout previosly, all changes will be reverted and all tiles will be deleted! This can be the case for computers managed by organizations. The application will also need admin rights to create registry keys that add tiles to the Start Menu.**
 
 #### Examples:
 <table>
@@ -21,10 +21,11 @@ Simply download the `GOG_Galaxy_Start_Menu.exe` from the Releases section. Your 
 
 ## :sparkles: Planned Features
 * [x] Add build pipeline
-* [ ] Remember tiles and remove old image files
-* [ ] Possibility to choose different icon image source
 * [x] Add custom Start Menu group name setting
 * [x] Test whether registry folder exists
+* [ ] Create Desktop icons
+* [ ] Remember tiles and remove old image files
+* [ ] Possibility to choose different icon image source
 
 ## :hammer_and_wrench: Usage
 ```

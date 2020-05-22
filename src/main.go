@@ -22,8 +22,8 @@ const versionFile = "selfupdate.json"
 const supportedVersion = "2.0.15.43"
 
 var loglevel = flag.String("level", "INFO", "Defines log level.")
-var gogDir = flag.String("database", "C:/ProgramData/GOG.com/Galaxy/", "Path to GOG Galaxy 2.0 database.")
-var startMenuDir = flag.String("startFolder", "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/", "Path for game shortcuts and image data.")
+var gogDir = flag.String("gogDir", "C:/ProgramData/GOG.com/Galaxy/", "Path to GOG Galaxy 2.0 data directory.")
+var startMenuDir = flag.String("startDir", "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/", "Path for game shortcuts and image data.")
 var width = flag.Int("width", 3, "Defines the tile count per row in the Start Menu Layout (3 or 4).")
 var height = flag.Int("height", 7, "Defines the rows per group Start Menu Layout.")
 var tileSize = flag.Int("tileSize", 2, "Size of the individual game tiles (1 or 2).")

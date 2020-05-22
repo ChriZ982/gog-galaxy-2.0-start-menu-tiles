@@ -97,11 +97,11 @@ func updateRegistry() {
 	key, _, err := registry.CreateKey(registry.CURRENT_USER, `Software\Policies\Microsoft\Windows\Explorer`, registry.ALL_ACCESS)
 	defer key.Close()
 	if err != nil {
-		log.Fatal("Could not create Registry Key. ", err)
+		log.Fatal("Could not create Registry Key. You might have to run the program with admin rights. ", err)
 	}
 	values, err := key.ReadValueNames(0)
 	if err != nil {
-		log.Fatal("Could not list Registry values")
+		log.Fatal("Could not list Registry values. You might have to run the program with admin rights.")
 	}
 	if find(values, "StartLayoutFile") || find(values, "LockedStartLayout") {
 		log.Warn("Registry Value 'StartLayoutFile' or 'LockedStartLayout' exists. There might have been a Start Layout previously applied! This would be removed entirely!")
@@ -119,23 +119,23 @@ func updateRegistry() {
 	if err != nil {
 		log.Fatal("Not able to get working directory. ", err)
 	}
-	err1 := key.SetExpandStringValue("StartLayoutFile", wd+"\\PartialStartLayout.xml")
+	err = key.SetExpandStringValue("StartLayoutFile", wd+"\\PartialStartLayout.xml")
 	err2 := key.SetDWordValue("LockedStartLayout", 1)
-	if err1 != nil || err2 != nil {
-		log.Fatal("Could not set registry value. ", err)
+	if err != nil || err2 != nil {
+		log.Fatal("Could not set registry value. You might have to run the program with admin rights. ", err)
 	}
 	execPowershell("Stop-Process -ProcessName explorer")
 	time.Sleep(5 * time.Second)
 	err = key.SetDWordValue("LockedStartLayout", 0)
 	if err != nil {
-		log.Fatal("Could not set registry value. ", err)
+		log.Fatal("Could not set registry value. You might have to run the program with admin rights. ", err)
 	}
 	execPowershell("Stop-Process -ProcessName explorer")
 	time.Sleep(3 * time.Second)
-	err3 := key.DeleteValue("StartLayoutFile")
-	err4 := key.DeleteValue("LockedStartLayout")
-	if err3 != nil || err4 != nil {
-		log.Fatal("Could not delete registry value. ", err)
+	err = key.DeleteValue("StartLayoutFile")
+	err2 = key.DeleteValue("LockedStartLayout")
+	if err != nil || err2 != nil {
+		log.Fatal("Could not delete registry value. You might have to run the program with admin rights. ", err)
 	}
 }
 

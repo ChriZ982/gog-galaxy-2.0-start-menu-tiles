@@ -5,7 +5,7 @@ This script lets you create Start Menu Tiles of your favourite games in Windows 
 
 Simply download the `GOG_Galaxy_Start_Menu.exe` from the Releases section. Your GOG Galaxy 2.0 database will be read and a shortcut will be created in the Programs section. Additionally tiles can be automatically added to the Start Menu, providing a stylish and easy access.
 
-**Disclaimer: If you have applied a Start Menu Layout previosly, all changes will be reverted and all tiles will be deleted! This can be the case for computers managed by organizations. The application will also need admin rights to create registry keys that add tiles to the Start Menu.**
+**Disclaimer: If you have applied a Start Menu Layout previosly, all changes will be reverted and all tiles will be deleted! This can be the case for computers managed by organizations. The application sometimes needs admin rights to create registry keys that add tiles to the Start Menu.**
 
 #### Examples:
 <table>
@@ -30,10 +30,10 @@ Simply download the `GOG_Galaxy_Start_Menu.exe` from the Releases section. Your 
 ## :hammer_and_wrench: Usage
 ```
 Usage of GOG_Galaxy_Start_Menu.exe:
-  -database string
-        Path to GOG Galaxy 2.0 database. (default "C:/ProgramData/GOG.com/Galaxy/storage/galaxy-2.0.db")
   -force
         Force re-download of images.
+  -gogDir string
+        Path to GOG Galaxy 2.0 data directory. (default "C:/ProgramData/GOG.com/Galaxy/")
   -groupName string
         Name of the Start Menu group.
   -height int
@@ -42,7 +42,7 @@ Usage of GOG_Galaxy_Start_Menu.exe:
         Show name of game on Start Menu Tile.
   -level string
         Defines log level. (default "INFO")
-  -startFolder string
+  -startDir string
         Path for game shortcuts and image data. (default "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/")
   -tagName string
         Define a custom tag that defines games to be added to the Start Menu. You can also set it to INSTALLED or ALL to add installed or all games to the StartMenu. (default "StartMenuTiles")

@@ -26,7 +26,7 @@ func (g *Game) Sanitize(disallowedChars *regexp.Regexp) {
 func (g *Game) ExistsIn(games []Game) bool {
 	for _, game := range games {
 		if g.Title == game.Title {
-			log.Debugf("'%s' already exists with ReleaseKey '%s'", game.Title, game.ReleaseKey)
+			log.Warnf("'%s' (%s) already exists with ReleaseKey '%s'. Hide one of them in your games library.", game.Title, g.ReleaseKey, game.ReleaseKey)
 			return true
 		}
 	}

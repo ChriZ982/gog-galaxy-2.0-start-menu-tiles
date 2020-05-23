@@ -43,7 +43,7 @@ func main() {
 		log.Fatalf("Log level '%s' not recognized. %s", *loglevel, err)
 	}
 	log.SetLevel(level)
-	cmdLine := strings.Join(os.Args[1:], " ")
+	cmdLine := "\"" + strings.Join(os.Args[1:], "\" \"") + "\""
 	log.Debug(cmdLine)
 
 	checkParams()

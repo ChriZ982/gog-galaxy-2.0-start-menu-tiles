@@ -18,7 +18,7 @@ type Game struct {
 // Sanitize cleans disallowed characters from all strings
 func (g *Game) Sanitize(disallowedChars *regexp.Regexp) {
 	g.FileName = disallowedChars.ReplaceAllString(g.ReleaseKey, "")
-	g.Title = disallowedChars.ReplaceAllString(strings.Split(g.Title, ":")[1], "")
+	g.Title = disallowedChars.ReplaceAllString(strings.SplitN(g.Title, ":", 2)[1], "")
 	g.IconFileName = strings.ReplaceAll(g.IconFileName, ".webp", ".png")
 }
 

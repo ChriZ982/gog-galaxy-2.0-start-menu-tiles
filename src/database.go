@@ -16,7 +16,7 @@ var sqlInstalledGames = fmt.Sprintf(gameInfoJoins,
 	(SELECT 'gog_' || ibp.productId as releaseKey FROM InstalledBaseProducts ibp
 	UNION ALL
 	SELECT p.name || '_' || iep.productId as releaseKey FROM InstalledExternalProducts iep
-	JOIN Platforms p ON iep.platformId = p.id) as Installed`,
+	JOIN Platforms p ON iep.platformId = p.id WHERE iep.platformId <> 85) as Installed`, // Excluding Rockstar games as they seem to be always "installed"
 	"Installed.releaseKey", "")
 
 var sqlAllGames = fmt.Sprintf(gameInfoJoins, "SELECT lr.releaseKey, wcr.filename, gp.value FROM LibraryReleases lr",
@@ -28,9 +28,8 @@ LEFT JOIN WebCacheResources wcr ON wc.id = wcr.webCacheId
 LEFT JOIN WebCacheResourceTypes wcrt ON wcrt.id = wcr.webCacheResourceTypeId
 LEFT JOIN GamePieces gp ON %[2]s = gp.releaseKey
 LEFT JOIN GamePieceTypes gpt ON gpt.id = gp.gamePieceTypeId
-LEFT JOIN GamePieces gp2 ON %[2]s = gp2.releaseKey
-LEFT JOIN GamePieceTypes gpt2 ON gpt2.id = gp2.gamePieceTypeId
-WHERE wcrt.type = 'squareIcon' AND gpt.type = 'title' AND gpt2.type = 'myIsHidden' AND gp2.value LIKE '%%"isHidden":false%%' AND gp.userId <> 0 %[3]s`
+LEFT JOIN UserReleaseProperties urp ON %[2]s = urp.releaseKey
+WHERE wcrt.type = 'squareIcon' AND gpt.type = 'title' AND urp.isHidden = 0 AND gp.userId <> 0 %[3]s`
 
 const lastCacheUpdate = `SELECT updateDate FROM GamePieceCacheUpdateDates WHERE userId <> 0`
 

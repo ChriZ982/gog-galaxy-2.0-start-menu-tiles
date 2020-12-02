@@ -12,7 +12,7 @@ build:
   script:
     - mkdir -p /go/src/gitlab.com/ChriZ98
     - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/ChriZ98/gog-galaxy-2-0-start-menu-tiles
-    - go build -o GOG_Galaxy_Start_Menu.exe
+    - GOOS=windows GOARCH=amd64 go build -o GOG_Galaxy_Start_Menu.exe
   artifacts:
     paths:
       - GOG_Galaxy_Start_Menu.exe

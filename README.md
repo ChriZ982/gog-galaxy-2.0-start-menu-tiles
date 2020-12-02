@@ -2,7 +2,7 @@
 
 Main repository at: https://gitlab.com/ChriZ98/gog-galaxy-2-0-start-menu-tiles
 
-[![GOG Galaxy 2.0](https://img.shields.io/badge/GOG-Galaxy%202.0-86328A?logo=data:https://simpleicons.org/icons/gog-dot-com.svg)](https://www.gogalaxy.com/en/) [![Build status](https://travis-ci.org/ChriZ982/gog-galaxy-2.0-start-menu-tiles.svg?branch=master)](https://travis-ci.org/github/ChriZ982/gog-galaxy-2.0-start-menu-tiles/branches) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ChriZ982/gog-galaxy-2.0-start-menu-tiles)](https://github.com/ChriZ982/gog-galaxy-2.0-start-menu-tiles/releases) ![GitHub stars](https://img.shields.io/github/stars/ChriZ982/gog-galaxy-2.0-start-menu-tiles) ![GitHub top language](https://img.shields.io/github/languages/top/ChriZ982/gog-galaxy-2.0-start-menu-tiles) [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)
+[![GOG Galaxy 2.0](https://img.shields.io/badge/GOG-Galaxy%202.0-86328A?logo=data:https://simpleicons.org/icons/gog-dot-com.svg)](https://www.gogalaxy.com/en/) ![Gitlab pipeline status](https://img.shields.io/gitlab/pipeline/ChriZ98/gog-galaxy-2-0-start-menu-tiles/master) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ChriZ982/gog-galaxy-2.0-start-menu-tiles)](https://gitlab.com/ChriZ98/gog-galaxy-2-0-start-menu-tiles/-/releases) ![GitHub top language](https://img.shields.io/github/languages/top/ChriZ982/gog-galaxy-2.0-start-menu-tiles) [![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C)](https://www.paypal.me/ChriZ98)
 
 This script lets you create Start Menu Tiles of your favourite games in Windows 10! :video_game:
 
@@ -64,7 +64,7 @@ If your feature is a good addition to the project, it will be merged!
 ## :sparkling_heart: Support my projects
 If you like the project and you want to support me - please consider to gift using the button below.
 
-[![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C?logo=paypal)](https://www.paypal.me/ChriZ98)
+[![PayPal.Me ChriZ98](https://img.shields.io/badge/PayPal.Me-ChriZ98-00457C)](https://www.paypal.me/ChriZ98)
 
 Thanks! :heart:
 

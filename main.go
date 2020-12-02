@@ -6,43 +6,32 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/shiena/ansicolor"
 	log "github.com/sirupsen/logrus"
 )
 
-var disallowedChars = regexp.MustCompile("[^A-Za-z0-9 +_#!()=-]+")
-
 const dbLocation = "storage/galaxy-2.0.db"
 const versionFile = "selfupdate.json"
-const supportedVersion = "2.0.15.43"
+const supportedVersion = "2.0.25.2"
 
-var loglevel = flag.String("level", "INFO", "Defines log level.")
-var gogDir = flag.String("gogDir", "C:/ProgramData/GOG.com/Galaxy/", "Path to GOG Galaxy 2.0 data directory.")
 var startMenuDir = flag.String("startDir", "/Appdata/Roaming/Microsoft/Windows/Start Menu/Programs/GOG.com/GameTiles/", "Path for game shortcuts and image data.")
-var width = flag.Int("width", 3, "Defines the tile count per row in the Start Menu Layout (3 or 4).")
-var height = flag.Int("height", 7, "Defines the rows per group Start Menu Layout.")
-var tileSize = flag.Int("tileSize", 2, "Size of the individual game tiles (1 or 2).")
-var yes = flag.Bool("y", false, "Always confirm creation of Start Layout.")
 var groupName = flag.String("groupName", "", "Name of the Start Menu group.")
-var tagName = flag.String("tagName", "StartMenuTiles", "Define a custom tag that defines games to be added to the Start Menu. You can also set it to INSTALLED or ALL to add installed or all games to the StartMenu.")
 var hideName = flag.Bool("hideName", false, "Show name of game on Start Menu Tile.")
+var loglevel = flag.String("level", "INFO", "Defines log level.")
+var tileSize = flag.Int("tileSize", 2, "Size of the individual game tiles (1 or 2).")
+var tagName = flag.String("tagName", "StartMenuTiles", "Define a custom tag that defines games to be added to the Start Menu. You can also set it to INSTALLED or ALL to add installed or all games to the StartMenu.")
+var gogDir = flag.String("gogDir", "C:/ProgramData/GOG.com/Galaxy/", "Path to GOG Galaxy 2.0 data directory.")
+var height = flag.Int("height", 7, "Defines the rows per group Start Menu Layout.")
 var force = flag.Bool("force", false, "Force re-download of images.")
+var width = flag.Int("width", 3, "Defines the tile count per row in the Start Menu Layout (3 or 4).")
+var yes = flag.Bool("y", false, "Always confirm creation of Start Layout.")
 
 func main() {
 	flag.Parse()
 
-	log.SetFormatter(&log.TextFormatter{ForceColors: true})
-	log.SetOutput(ansicolor.NewAnsiColorWriter(os.Stdout))
-	level, err := log.ParseLevel(*loglevel)
-	if err != nil {
-		log.Fatalf("Log level '%s' not recognized. %s", *loglevel, err)
-	}
-	log.SetLevel(level)
+	configLogger()
 	cmdLine := "\"" + strings.Join(os.Args[1:], "\" \"") + "\""
 	log.Debug(cmdLine)
 
@@ -55,6 +44,15 @@ func main() {
 
 	saveSettings(cmdLine)
 	log.Info("Program finished!")
+}
+
+func configLogger() {
+	log.SetFormatter(&log.TextFormatter{ForceColors: true})
+	level, err := log.ParseLevel(*loglevel)
+	if err != nil {
+		log.Fatalf("Log level '%s' not recognized. %s", *loglevel, err)
+	}
+	log.SetLevel(level)
 }
 
 func checkParams() {
@@ -94,7 +92,7 @@ func checkVersion() {
 		log.Fatalf("Error while parsing version file (%s). %s", *gogDir+versionFile, err)
 	}
 	var version string
-	err = json.Unmarshal(objmap["desktop-galaxy-clientVersion"], &version)
+	err = json.Unmarshal(objmap["prefetched__desktop-galaxy-clientVersion"], &version)
 	if err != nil {
 		log.Fatalf("Error while parsing version file (%s). %s", *gogDir+versionFile, err)
 	}

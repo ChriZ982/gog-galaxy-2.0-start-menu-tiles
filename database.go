@@ -64,7 +64,7 @@ func listGames() *[]Game {
 	for rows.Next() {
 		var game Game
 		rows.Scan(&game.ReleaseKey, &game.IconFileName, &game.Title)
-		game.Sanitize(disallowedChars)
+		game.Sanitize()
 		if !game.ExistsIn(games) {
 			games = append(games, game)
 		}

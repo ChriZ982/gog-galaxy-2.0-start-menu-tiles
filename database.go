@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"path"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -33,27 +34,30 @@ WHERE wcrt.type = 'squareIcon' AND gpt.type = 'title' AND urp.isHidden = 0 AND g
 
 const lastCacheUpdate = `SELECT updateDate FROM GamePieceCacheUpdateDates WHERE userId <> 0`
 
-func listGames() *[]Game {
+func listGames() []Game {
 	log.Info("Reading GOG Galaxy 2.0 database...")
-	database, err := sql.Open("sqlite3", *gogDir+dbLocation+"?mode=ro")
+	dbPath := path.Join(args.gogDir, dbLocation)
+	database, err := sql.Open("sqlite3", dbPath+"?mode=ro")
 	defer database.Close()
 	if err != nil {
-		log.Fatalf("Error while trying to open GOG Galaxy 2.0 database at '%s'. %s", *gogDir+dbLocation, err)
+		log.Fatalf("Error while trying to open GOG Galaxy 2.0 database at '%s'. %s", dbPath, err)
 	}
+
 	var cacheUpdate string
 	err = database.QueryRow(lastCacheUpdate).Scan(&cacheUpdate)
 	if err != nil {
 		log.Fatal("Error while trying to get latest cache update. ", err)
 	}
+
 	log.Infof("Last cache update was on '%s'", cacheUpdate)
 	var rows *sql.Rows
-	switch *tagName {
+	switch args.tagName {
 	case "INSTALLED":
 		rows, err = database.Query(sqlInstalledGames)
 	case "ALL":
 		rows, err = database.Query(sqlAllGames)
 	default:
-		rows, err = database.Query(sqlTaggedGames, *tagName)
+		rows, err = database.Query(sqlTaggedGames, args.tagName)
 	}
 	if err != nil {
 		log.Fatal("Error while running query on database. ", err)
@@ -64,7 +68,7 @@ func listGames() *[]Game {
 	for rows.Next() {
 		var game Game
 		rows.Scan(&game.ReleaseKey, &game.IconFileName, &game.Title)
-		game.Sanitize(disallowedChars)
+		game.Sanitize()
 		if !game.ExistsIn(games) {
 			games = append(games, game)
 		}
@@ -81,5 +85,5 @@ func listGames() *[]Game {
 	case len(games) > 80:
 		log.Warnf("Adding too many tiles causes unexpected behaviour. %d tiles will be added.", len(games))
 	}
-	return &games
+	return games
 }

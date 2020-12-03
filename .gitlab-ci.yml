@@ -1,0 +1,37 @@
+stages:
+  - build
+  - upload
+  - release
+
+before_script:
+  - export PACKAGE_REGISTRY_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/releases/$(echo ${CI_COMMIT_TAG} | sed 's/v//')"
+
+build:
+  stage: build
+  image: golang:1.15
+  script:
+    - mkdir -p /go/src/gitlab.com/ChriZ98
+    - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/ChriZ98/gog-galaxy-2-0-start-menu-tiles
+    - GOOS=windows GOARCH=amd64 go build -o GOG_Galaxy_Start_Menu.exe
+  artifacts:
+    paths:
+      - GOG_Galaxy_Start_Menu.exe
+
+upload:
+  stage: upload
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file GOG_Galaxy_Start_Menu.exe ${PACKAGE_REGISTRY_URL}/GOG_Galaxy_Start_Menu.exe
+  only:
+    - tags
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - |
+      release-cli create --name "$CI_COMMIT_TAG - Release name" --tag-name $CI_COMMIT_TAG \
+        --assets-link "{\"name\":\"GOG_Galaxy_Start_Menu.exe\",\"url\":\"${PACKAGE_REGISTRY_URL}/GOG_Galaxy_Start_Menu.exe\"}"
+  only:
+    - tags

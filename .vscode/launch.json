@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/src/",
+            "program": "${workspaceFolder}/",
             "env": {"CGO_ENABLED":1},
             "args": ["-level", "DEBUG", "-width", "4", "-tagName", "INSTALLED", "-y"]
         }

@@ -26,9 +26,9 @@ func (g *Game) Sanitize() {
 
 // ExistsIn searches for current game in a list
 func (g *Game) ExistsIn(games []Game) bool {
-	for _, game := range games {
-		if g.Title == game.Title {
-			log.Warnf("'%s' (%s) already exists with ReleaseKey '%s'. Hide one of them in your games library.", game.Title, g.ReleaseKey, game.ReleaseKey)
+	for _, other := range games {
+		if g.Title == other.Title {
+			log.Warnf("'%s' (%s) already exists with ReleaseKey '%s'. Hide one of them in your games library.", other.Title, g.ReleaseKey, other.ReleaseKey)
 			return true
 		}
 	}

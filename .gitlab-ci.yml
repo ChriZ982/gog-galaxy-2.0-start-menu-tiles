@@ -31,7 +31,7 @@ release:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
     - |
-      release-cli create --name "Release $CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG \
+      release-cli create --name "$CI_COMMIT_TAG - Release name" --tag-name $CI_COMMIT_TAG \
         --assets-link "{\"name\":\"GOG_Galaxy_Start_Menu.exe\",\"url\":\"${PACKAGE_REGISTRY_URL}/GOG_Galaxy_Start_Menu.exe\"}"
   only:
     - tags
